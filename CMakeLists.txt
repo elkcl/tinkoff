@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.14)
 project(tinkoff)
 
 set(CMAKE_CXX_STANDARD 20)
+#set(ALLOW_DUPLICATE_CUSTOM_TARGETS TRUE)
+
+#add_subdirectory(lesson2-searches)
 
 add_executable(A.o lesson1-sorts/A.cpp)
 add_executable(B.o lesson1-sorts/B.cpp)
@@ -18,3 +21,16 @@ add_executable(L.o lesson1-sorts/L.cpp)
 add_executable(M.o lesson1-sorts/M.cpp)
 add_executable(M_stupid.o lesson1-sorts/M_stupid.cpp)
 add_executable(L_stupid.o lesson1-sorts/L_stupid.cpp)
+
+
+#set_target_properties(A.o PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lesson1-sorts/")
+add_executable(A2.o lesson2-searches/A2.cpp)
+add_executable(B2.o lesson2-searches/B2.cpp)
+add_executable(C2.o lesson2-searches/C2.cpp)
+add_executable(D2.o lesson2-searches/D2.cpp)
+add_executable(E2.o lesson2-searches/E2.cpp)
+add_executable(F2.o lesson2-searches/F2.cpp)
+add_executable(G2.o lesson2-searches/G2.cpp)
+add_executable(H2.o lesson2-searches/H2.cpp)
+add_executable(I2.o lesson2-searches/I2.cpp)
+add_executable(J2.o lesson2-searches/J2.cpp)

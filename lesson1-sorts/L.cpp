@@ -18,25 +18,29 @@ bool cmp(const string &a, const string &b) {
         ++it1;
         ++it2;
     }
-    return it1 == a.end() && it2 != b.end();
+    if ((it1 == a.end()) != (it2 == b.end())) {
+    	return a+b > b+a;
+    } else {
+    	return false;
+    }
 }
 
 int main() {
-    //freopen("number.in", "r", stdin);
-    //freopen("number.out", "w", stdout);
+    freopen("number.in", "r", stdin);
+    freopen("number.out", "w", stdout);
 
     vector<string> v;
     string in;
     while (getline(cin, in)) {
-        if (in == "END") break;
+        //if (in == "END") break;
         v.push_back(in);
     }
-    sort(v.begin(), v.end());
+    sort(v.begin(), v.end(), cmp);
     for (auto &s : v) {
         cout << s;
     }
 
-    //fclose(stdin);
-    //fclose(stdout);
+    fclose(stdin);
+    fclose(stdout);
     return 0;
 }
