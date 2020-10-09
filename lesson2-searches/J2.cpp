@@ -3,7 +3,8 @@
 #include <iostream>
 #include <vector>
 #include <functional>
-#include <utility>
+#include <algorithm>
+#include <cmath>
 
 using namespace std;
 using vi = vector<int>;
@@ -12,7 +13,7 @@ using ld = long double;
 const ld eps = 1e-9;
 
 ld realBinarySearch(ld left, ld right, const function<bool(ld)> &check) {
-    for (int i = 0; i < 100; ++i) {
+    for (int i = 0; i < 150; ++i) {
         ld middle = (left + right) / 2;
         if (check(middle)) {
             left = middle;
@@ -23,32 +24,11 @@ ld realBinarySearch(ld left, ld right, const function<bool(ld)> &check) {
     return right;
 }
 
-struct Segment {
-    ld l;
-    ld r;
-    bool isValid = true;
-};
-
-bool operator<(Segment a, Segment b) {
-    if (a.l == b.l) {
-        return a.r - b.r < eps;
-    } else {
-        return a.l - b.l < eps;
-    }
-}
-
-Segment operator*(Segment a, Segment b) {
-    if (b < a) swap(a, b);
-    if (b.l - a.r > eps) {
-        return {0, 0, false};
-    } else {
-        return {b.l, a.r};
-    }
-}
-
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
+    cout.setf(ios::fixed);
+    cout.precision(10);
 
     while (true) {
         int n;
@@ -60,25 +40,36 @@ int main() {
         for (int i=0; i<n; ++i) {
             cin >> x[i] >> y[i] >> w[i];
         }
-        ld r = realBinarySearch(0, 1e14, [n, &x, &y, &w](ld k) {
-            Segment xrange{x[0]-k/w[0], x[0]+k/w[0]};
-            Segment yrange{y[0]-k/w[0], y[0]+k/w[0]};
-            for (int i=1; i<n; ++i) {
-                xrange = xrange * Segment{x[i]-k/w[i], x[i]+k/w[i]};
-                yrange = yrange * Segment{y[i]-k/w[i], y[i]+k/w[i]};
-                if (!xrange.isValid || !yrange.isValid) return true;
+
+        auto f = [n, &x, &y, &w](ld x0, ld y0) -> ld {
+            ld ans = 0;
+            for (int i=0; i<n; ++i) {
+                ans = max(ans,
+                          w[i] * sqrt((x[i]-x0)*(x[i]-x0)
+                          + (y[i]-y0)*(y[i]-y0) ));
             }
-            return false;
+            return ans;
+        };
+        int xmin = *min_element(x.begin(), x.end());
+        int xmax = *max_element(x.begin(), x.end());
+        int ymin = *min_element(y.begin(), y.end());
+        int ymax = *max_element(y.begin(), y.end());
+        //cout << xmin << " " << xmax << " " << ymin << " " << ymax << "\n";
+        ld x0 = realBinarySearch(xmin, xmax, [f, ymin, ymax](ld xc) {
+            return f(xc-eps, realBinarySearch(ymin, ymax, [xc, f](ld yc) {
+                return f(xc-eps, yc-eps) > f(xc-eps, yc+eps);
+            }))
+            > f(xc+eps, realBinarySearch(ymin, ymax, [xc, f](ld yc) {
+               return f(xc+eps, yc-eps) > f(xc+eps, yc+eps);
+            }));
         });
-        Segment xrange{x[0]-r/w[0], x[0]+r/w[0]};
-        Segment yrange{y[0]-r/w[0], y[0]+r/w[0]};
-        for (int i=1; i<n; ++i) {
-            xrange = xrange * Segment{x[i] - r / w[i], x[i] + r / w[i]};
-            yrange = yrange * Segment{y[i] - r / w[i], y[i] + r / w[i]};
-        }
-        cout.setf(ios::fixed);
-        cout.precision(10);
-        cout << (xrange.l+xrange.r)/2 << " " << (yrange.l+yrange.r)/2 << "\n";
-        cout << r << "\n";
+        ld y0 = realBinarySearch(ymin, ymax, [x0, f](ld yc) {
+            return f(x0, yc-eps) > f(x0, yc+eps);
+        });
+
+        cout << x0 << " " << y0 << "\n";
+        /**cout << "DEBUG: " << f(x0, y0) << "\n";
+        if (n == 2) cout << "CORRECT: " << f(1, 1) << "\n";
+        else if (n == 3) cout << "CORRECT: " << f(2.4, 3.6) << "\n";**/
     }
 }
