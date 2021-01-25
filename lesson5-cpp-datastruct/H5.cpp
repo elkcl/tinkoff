@@ -21,6 +21,11 @@ int main() {
         cin >> h[i];
     }
     h[n] = 0;
+    vi pref(n);
+    pref[0] = h[0];
+    for (int i = 1; i < n; ++i) {
+        pref[i] = h[i] + pref[i-1];
+    }
 
     si s;
     ll ans = 0;
@@ -29,9 +34,9 @@ int main() {
             int ind = s.top();
             s.pop();
             if (!s.empty()) {
-                ans = max(ans, h[ind] * (i - s.top() - 1));
+                ans = max(ans, h[ind] * (pref[i-1] - pref[s.top()]));
             } else {
-                ans = max(ans, h[ind] * (i));
+                ans = max(ans, h[ind] * pref[i-1]);
             }
         }
         s.push(i);

@@ -1,16 +1,18 @@
-#pragma GCC optimize("O3")
+#pragma GCC optimize("Ofast")
+#pragma GCC target("avx,avx2,sse,sse2,sse3,ssse3,sse4.1,sse4.2")
 
 #include <iostream>
 #include <vector>
 #include <set>
 #include <string>
+#include <map>
 #include <unordered_map>
 
 using namespace std;
 using ll = long long;
 using si = set<int>;
 using sll = set<ll>;
-using vsll = vector<sll>;
+using vsll = unordered_map<int, sll>;
 using umllsi = unordered_map<ll, si>;
 
 int main() {
@@ -20,7 +22,7 @@ int main() {
     ll n;
     int m, k;
     cin >> n >> m >> k;
-    vsll sets(m+1);
+    vsll sets;
     umllsi setsOfNum;
     for (int q = 0; q < k; ++q) {
         string queryType;
@@ -41,10 +43,10 @@ int main() {
             int s;
             cin >> s;
             if (!sets[s].empty()) {
-                sets[s].clear();
-                for (auto &el : setsOfNum) {
-                    el.second.erase(s);
+                for (auto &el : sets[s]) {
+                    setsOfNum[el].erase(s);
                 }
+                sets[s].clear();
             }
         } else if (queryType == "LISTSET") {
             int s;
