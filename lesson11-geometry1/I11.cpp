@@ -9,6 +9,7 @@
 
 using namespace std;
 using ll = long long;
+using ld = long double;
 using ii = pair<int, int>;
 using vi = vector<int>;
 using vii = vector<ii>;
@@ -16,8 +17,8 @@ using vvi = vector<vi>;
 using vc = vector<char>;
 
 struct Point {
-    int x;
-    int y;
+    ld x;
+    ld y;
 };
 
 Point operator+(Point a, Point b) {
@@ -28,27 +29,27 @@ Point operator-(Point a, Point b) {
     return {a.x - b.x, a.y - b.y};
 }
 
-Point operator*(Point a, int k) {
+Point operator*(Point a, ld k) {
     return {a.x * k, a.y * k};
 }
 
-Point operator*(int k, Point a) {
+Point operator*(ld k, Point a) {
     return {a.x * k, a.y * k};
 }
 
-Point operator/(Point a, int k) {
+Point operator/(Point a, ld k) {
     return {a.x / k, a.y / k};
 }
 
-ll operator*(Point a, Point b) {
+ld operator*(Point a, Point b) {
     return a.x * b.x + a.y * b.y;
 }
 
-ll operator%(Point a, Point b) {
+ld operator%(Point a, Point b) {
     return a.x * b.y - a.y * b.x;
 }
 
-int sgn(int val) {
+ll sgn(ld val) {
     return (0 < val) - (val < 0);
 }
 
@@ -56,18 +57,27 @@ int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    Point a{}, o{}, b{}, p{};
-    cin >> a.x >> a.y >> o.x >> o.y
-        >> b.x >> b.y >> p.x >> p.y;
+    int n;
+    cin >> n;
+    vector<Point> v(n);
+    for (int i = 0; i < n; ++i) {
+        cin >> v[i].x >> v[i].y;
+    }
 
-    if (((a - o) % (p - o) == 0 && (a - o) * (p - o) >= 0) || ((b - o) % (p - o) == 0 && (b - o) * (p - o) >= 0)) {
-        cout << "YES\n";
+    ll s = sgn((v[1] - v[0]) % (v[2] - v[0]));
+    for (int i = 1; i < n-2; ++i) {
+        if (sgn((v[i+1] - v[i]) % (v[i+2] - v[i])) != s) {
+            cout << "NO\n";
+            return 0;
+        }
+    }
+    if (sgn((v[n-1] - v[n-2]) % (v[0] - v[n-2])) != s) {
+        cout << "NO\n";
         return 0;
     }
-    if (sgn((a - o) % (b - o)) == sgn((a - o) % (p - o)) &&
-    sgn((b - o) % (a - o)) == sgn((b - o) % (p - o))) {
-        cout << "YES\n";
+    if (sgn((v[0] - v[n-1]) % (v[1] - v[n-1])) != s) {
+        cout << "NO\n";
         return 0;
     }
-    cout << "NO\n";
+    cout << "YES\n";
 }

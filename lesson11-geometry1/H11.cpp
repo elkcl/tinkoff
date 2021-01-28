@@ -163,7 +163,7 @@ ld distance(Line l1, Line l2) {
 ld distance(Ray r, Line l) {
     auto inter = r.l ^ l;
     if (inter.second == 2 ||
-    (inter.second == 1 && r.contains(inter.first))) {
+        (inter.second == 1 && r.contains(inter.first))) {
         return 0;
     } else {
         return distance(r.a, l);
@@ -236,28 +236,14 @@ int main() {
     cin >> a.x >> a.y >> b.x >> b.y
         >> c.x >> c.y >> d.x >> d.y;
 
-    Line lAB(a, b);
-    Ray rAB(a, b);
-    Segment sAB(a, b);
-
-    Line lCD(c, d);
-    Ray rCD(c, d);
-    Segment sCD(c, d);
-
-    cout << distance(a, c)     << '\n'
-         << distance(a, sCD)   << '\n'
-         << distance(a, rCD)   << '\n'
-         << distance(a, lCD)   << '\n'
-         << distance(c, sAB)   << '\n'
-         << distance(sAB, sCD) << '\n'
-         << distance(sAB, rCD) << '\n'
-         << distance(sAB, lCD) << '\n'
-         << distance(c, rAB)   << '\n'
-         << distance(sCD, rAB) << '\n'
-         << distance(rAB, rCD) << '\n'
-         << distance(rAB, lCD) << '\n'
-         << distance(c, lAB)   << '\n'
-         << distance(sCD, lAB) << '\n'
-         << distance(rCD, lAB) << '\n'
-         << distance(lAB, lCD) << '\n';
+    Line lAB{a, b};
+    Line lCD{c, d};
+    auto in = lAB ^ lCD;
+    if (in.second == 0) {
+        cout << "0\n";
+    } else if (in.second == 2) {
+        cout << "2\n";
+    } else {
+        cout << "1 " << in.first.x << ' ' << in.first.y << '\n';
+    }
 }

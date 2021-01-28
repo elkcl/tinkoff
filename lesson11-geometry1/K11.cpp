@@ -18,6 +18,10 @@ using vc = vector<char>;
 
 const ld EPS = 1e-10;
 
+int sgn(ld val) {
+    return (0 < val) - (val < 0);
+}
+
 struct Point {
     ld x;
     ld y;
@@ -73,6 +77,7 @@ struct Line {
         n = (b - a).norm();
     }
     bool contains(Point a) const;
+    int halfPlane(Point p1) const;
 };
 
 Point perp(Point p, Line l) {
@@ -103,6 +108,10 @@ pair<Point, int> operator^(Line a, Line b) {
         ld y = (b.n.y * (a.n % a.p) - a.n.y * (b.n % b.p)) / k;
         return {{x, y}, 1};
     }
+}
+
+int Line::halfPlane(Point p1) const {
+    return sgn(n % (p1 - p));
 }
 
 ld distance(Point p, Line l) {
@@ -163,7 +172,7 @@ ld distance(Line l1, Line l2) {
 ld distance(Ray r, Line l) {
     auto inter = r.l ^ l;
     if (inter.second == 2 ||
-    (inter.second == 1 && r.contains(inter.first))) {
+        (inter.second == 1 && r.contains(inter.first))) {
         return 0;
     } else {
         return distance(r.a, l);
@@ -228,36 +237,45 @@ ld distance(Segment s1, Segment s2) {
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
+    freopen("point.in", "r", stdin);
+    freopen("point.out", "w", stdout);
 
-    cout.setf(ios::fixed);
-    cout.precision(10);
+    int n;
+    Point p{};
+    cin >> n >> p.x >> p.y;
+    vector<Point> v(n);
+    for (int i = 0; i < n; ++i) {
+        cin >> v[i].x >> v[i].y;
+    }
 
-    Point a{}, b{}, c{}, d{};
-    cin >> a.x >> a.y >> b.x >> b.y
-        >> c.x >> c.y >> d.x >> d.y;
+    int count = 0;
+    Ray r{p, p + Point{1e9+7, 1}};
+    for (int i = 0; i < n; ++i) {
+        if (Segment{v[i], v[(i+1)%n]}.contains(p)) {
+            cout << "YES\n";
+            return 0;
+        }
+        if (distance(Segment{v[i], v[(i+1)%n]}, r) < EPS) {
+            if (r.contains(v[i]) && r.contains(v[(i+1)%n])) {
+                if (r.l.halfPlane(v[(i-1+n)%n]) != r.l.halfPlane(v[(i+2)%n])) {
+                    ++count;
+                }
+            } else {
+                ++count;
+            }
+        }
+    }
+    for (int i = 0; i < n; ++i) {
+        if (r.contains(v[i])) {
+            if (r.l.halfPlane(v[(i-1+n)%n]) != r.l.halfPlane(v[(i+1)%n])) {
+                ++count;
+            }
+        }
+    }
 
-    Line lAB(a, b);
-    Ray rAB(a, b);
-    Segment sAB(a, b);
-
-    Line lCD(c, d);
-    Ray rCD(c, d);
-    Segment sCD(c, d);
-
-    cout << distance(a, c)     << '\n'
-         << distance(a, sCD)   << '\n'
-         << distance(a, rCD)   << '\n'
-         << distance(a, lCD)   << '\n'
-         << distance(c, sAB)   << '\n'
-         << distance(sAB, sCD) << '\n'
-         << distance(sAB, rCD) << '\n'
-         << distance(sAB, lCD) << '\n'
-         << distance(c, rAB)   << '\n'
-         << distance(sCD, rAB) << '\n'
-         << distance(rAB, rCD) << '\n'
-         << distance(rAB, lCD) << '\n'
-         << distance(c, lAB)   << '\n'
-         << distance(sCD, lAB) << '\n'
-         << distance(rCD, lAB) << '\n'
-         << distance(lAB, lCD) << '\n';
+    if (count % 2 == 0) {
+        cout << "NO\n";
+    } else {
+        cout << "YES\n";
+    }
 }
