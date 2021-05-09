@@ -35,18 +35,16 @@ using ui = unsigned int;
 #define file_io(x)
 #endif
 
-const int INF = 1e9 + 1e8;
-
 struct Node;
 using pp = pair<Node*, Node*>;
 
 struct Node {
     int val, pr, sz = 1;
-    int sum;
+    ll sum;
     bool rev = false;
     Node *l = nullptr, *r = nullptr;
 
-    Node(int _key, int _pr): val{_key}, pr{_pr}, minv{_key} {}
+    Node(int _key, int _pr): val{_key}, pr{_pr}, sum{_key} {}
 
     static int get_sz(Node* t) {
         if (!t)
@@ -54,21 +52,21 @@ struct Node {
         return t->sz;
     }
 
-    static int get_sum(Node* t) {
+    static ll get_sum(Node* t) {
         if (!t)
-            return INF;
-        return t->minv;
+            return 0;
+        return t->sum;
     }
 
     static void upd(Node* t) {
         if (t) {
             t->sz = 1 + get_sz(t->l) + get_sz(t->r);
-            t->minv = min(t->val, min(get_min(t->l), get_min(t->r)));
+            t->sum = t->val + get_sum(t->l) + get_sum(t->r);
         }
     }
 
     static void push(Node* t) {
-        if (!t)
+        /*if (!t)
             return;
         if (!(t->rev))
             return;
@@ -77,7 +75,7 @@ struct Node {
             t->l->rev ^= 1;
         if (t->r)
             t->r->rev ^= 1;
-        t->rev = false;
+        t->rev = false;*/
     }
 
     static pp split(Node *t, int k) {
@@ -166,26 +164,7 @@ struct TreapVec {
         }
     }
 
-    /*[[nodiscard]] Node* minv() const {
-        return Node::minv(root);
-    }
 
-    [[nodiscard]] Node* max() const {
-        return Node::max(root);
-    }*/
-
-    /*Node* kth(int k, Node* curr = nullptr) {
-        if (!root)
-            return nullptr;
-        if (!curr)
-            curr = root;
-        int num = Node::get_sz(curr->l);
-        if (num == k)
-            return curr;
-        if (num > k)
-            return kth(k, curr->l);
-        return kth(k - num - 1, curr->r);
-    }*/
 
     Node* cut(int l, int r) {
         assert(l <= r);
@@ -216,12 +195,13 @@ struct TreapVec {
         to_vec(v, root);
     }
 
-    int minv(int l, int r) {
-        assert(l <= r);
+    ll sum(int l, int r) {
+        if (r < l)
+            return 0;
         assert(r < size);
         auto&& [t12, t3] = Node::split(root, r + 1);
         auto&& [t1, t2] = Node::split(t12, l);
-        int res = Node::get_min(t2);
+        ll res = Node::get_sum(t2);
         root = Node::merge(t1, Node::merge(t2, t3));
         return res;
     }
@@ -238,26 +218,76 @@ struct TreapVec {
 
 int main() {
     fast_io
-    file_io("reverse")
+    file_io("swapper")
 
-    int n, m;
-    cin >> n >> m;
-    TreapVec tr;
-    for (int i = 0; i < n; ++i) {
-        int a;
-        cin >> a;
-        tr.insert(a);
-    }
+    int n;
+    cin >> n;
+    int ctr = 1;
 
-    for (int q = 0; q < m; ++q) {
-        int t, l, r;
-        cin >> t >> l >> r;
-        --l;
-        --r;
-        if (t == 1) {
-            tr.rev(l, r);
-        } else if (t == 2) {
-            cout << tr.minv(l, r) << '\n';
+    while (n != 0) {
+        cout << "Swapper " << ctr << ":\n";
+
+        TreapVec even;
+        TreapVec odd;
+
+        int m;
+        cin >> m;
+        bool flag = true;
+        for (int i = 0; i < n; ++i) {
+            int a;
+            cin >> a;
+            if (flag)
+                even.insert(a);
+            else
+                odd.insert(a);
+            flag ^= 1;
         }
+
+        for (int q = 0; q < m; ++q) {
+            int t;
+            cin >> t;
+            if (t == 1) {
+                int l, r;
+                cin >> l >> r;
+                --l;
+                --r;
+
+                if (l % 2 == 0) {
+                    Node *t1 = even.cut(l / 2, (r - 1) / 2);
+                    Node *t2 = odd.cut(l / 2, (r - 1) / 2);
+                    even.paste(t2, l / 2);
+                    odd.paste(t1, l / 2);
+                } else {
+                    Node *t1 = even.cut((l + 1) / 2, r / 2);
+                    Node *t2 = odd.cut((l - 1) / 2, (r - 2) / 2);
+                    even.paste(t2, (l + 1) / 2);
+                    odd.paste(t1, (l - 1) / 2);
+                }
+            } else if (t == 2) {
+                int l, r;
+                cin >> l >> r;
+                --l;
+                --r;
+
+                int le, lo, re, ro;
+                if (l % 2 == 0) {
+                    le = lo = l / 2;
+                } else {
+                    le = (l + 1) / 2;
+                    lo = (l - 1) / 2;
+                }
+                if (r % 2 == 0) {
+                    re = r / 2;
+                    ro = (r - 2) / 2;
+                } else {
+                    re = ro = (r - 1) / 2;
+                }
+
+                cout << even.sum(le, re) + odd.sum(lo, ro) << '\n';
+            }
+        }
+        cin >> n;
+        cout << '\n';
+        ++ctr;
     }
 }

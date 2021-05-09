@@ -35,18 +35,17 @@ using ui = unsigned int;
 #define file_io(x)
 #endif
 
-const int INF = 1e9 + 1e8;
-
 struct Node;
 using pp = pair<Node*, Node*>;
 
 struct Node {
-    int val, pr, sz = 1;
-    int sum;
+    ll val;
+    int pr, sz = 1;
+    ll sum;
     bool rev = false;
     Node *l = nullptr, *r = nullptr;
 
-    Node(int _key, int _pr): val{_key}, pr{_pr}, minv{_key} {}
+    Node(ll _key, int _pr): val{_key}, pr{_pr}, sum{_key * _key} {}
 
     static int get_sz(Node* t) {
         if (!t)
@@ -54,21 +53,21 @@ struct Node {
         return t->sz;
     }
 
-    static int get_sum(Node* t) {
+    static ll get_sum(Node* t) {
         if (!t)
-            return INF;
-        return t->minv;
+            return 0;
+        return t->sum;
     }
 
     static void upd(Node* t) {
         if (t) {
             t->sz = 1 + get_sz(t->l) + get_sz(t->r);
-            t->minv = min(t->val, min(get_min(t->l), get_min(t->r)));
+            t->sum = t->val * t->val + get_sum(t->l) + get_sum(t->r);
         }
     }
 
     static void push(Node* t) {
-        if (!t)
+        /*if (!t)
             return;
         if (!(t->rev))
             return;
@@ -77,7 +76,7 @@ struct Node {
             t->l->rev ^= 1;
         if (t->r)
             t->r->rev ^= 1;
-        t->rev = false;
+        t->rev = false;*/
     }
 
     static pp split(Node *t, int k) {
@@ -138,7 +137,7 @@ struct TreapVec {
         mt.seed(3524900925);
     }
 
-    void insert(int val, int k = -1) {
+    void insert(ll val, int k = -1) {
         assert(k <= size);
         if (k == -1)
             k = size;
@@ -152,8 +151,10 @@ struct TreapVec {
         root = Node::merge(t1, Node::merge(t, t2));
     }
 
-    bool erase(int k) {
+    bool erase(int k = -1) {
         assert(k < size);
+        if (k == -1)
+            k = size - 1;
         --size;
         auto&& [t12, t3] = Node::split(root, k + 1);
         auto&& [t1, t2] = Node::split(t12, k);
@@ -165,27 +166,6 @@ struct TreapVec {
             return false;
         }
     }
-
-    /*[[nodiscard]] Node* minv() const {
-        return Node::minv(root);
-    }
-
-    [[nodiscard]] Node* max() const {
-        return Node::max(root);
-    }*/
-
-    /*Node* kth(int k, Node* curr = nullptr) {
-        if (!root)
-            return nullptr;
-        if (!curr)
-            curr = root;
-        int num = Node::get_sz(curr->l);
-        if (num == k)
-            return curr;
-        if (num > k)
-            return kth(k, curr->l);
-        return kth(k - num - 1, curr->r);
-    }*/
 
     Node* cut(int l, int r) {
         assert(l <= r);
@@ -204,7 +184,7 @@ struct TreapVec {
         root = Node::merge(t1, Node::merge(t, t2));
     }
 
-    void to_vec(vi &v, Node* curr) {
+    void to_vec(vll &v, Node* curr) {
         if (!curr)
             return;
         to_vec(v, curr->l);
@@ -212,16 +192,17 @@ struct TreapVec {
         to_vec(v, curr->r);
     }
 
-    void to_vec(vi &v) {
+    void to_vec(vll &v) {
         to_vec(v, root);
     }
 
-    int minv(int l, int r) {
-        assert(l <= r);
+    ll sum(int l, int r) {
+        if (r < l)
+            return 0;
         assert(r < size);
         auto&& [t12, t3] = Node::split(root, r + 1);
         auto&& [t1, t2] = Node::split(t12, l);
-        int res = Node::get_min(t2);
+        ll res = Node::get_sum(t2);
         root = Node::merge(t1, Node::merge(t2, t3));
         return res;
     }
@@ -234,30 +215,67 @@ struct TreapVec {
         t2->rev ^= 1;
         root = Node::merge(t1, Node::merge(t2, t3));
     }
+
+    ll operator[](int k) {
+        assert(k < size);
+        auto&& [t12, t3] = Node::split(root, k + 1);
+        auto&& [t1, t2] = Node::split(t12, k);
+        ll ans = t2->val;
+        root = Node::merge(t1, Node::merge(t2, t3));
+        return ans;
+    }
 };
 
 int main() {
     fast_io
-    file_io("reverse")
+    file_io("river")
 
-    int n, m;
-    cin >> n >> m;
+    int n, _, m;
+    cin >> n >> _;
     TreapVec tr;
     for (int i = 0; i < n; ++i) {
         int a;
         cin >> a;
         tr.insert(a);
     }
-
+    cin >> m;
+    cout << tr.sum(0, tr.size - 1) << '\n';
     for (int q = 0; q < m; ++q) {
-        int t, l, r;
-        cin >> t >> l >> r;
-        --l;
-        --r;
-        if (t == 1) {
-            tr.rev(l, r);
-        } else if (t == 2) {
-            cout << tr.minv(l, r) << '\n';
+        int e, v;
+        cin >> e >> v;
+        --v;
+        if (e == 1) {
+            if (v == 0) {
+                ll s = tr[0] + tr[1];
+                tr.erase(0);
+                tr.erase(0);
+                tr.insert(s, 0);
+            } else if (v == tr.size - 1) {
+                ll s = tr[tr.size - 2] + tr[tr.size - 1];
+                tr.erase();
+                tr.erase();
+                tr.insert(s);
+            } else {
+                ll a1 = tr[v - 1];
+                ll a2 = tr[v];
+                ll a3 = tr[v + 1];
+                ll s1 = a1 + a2 / 2;
+                ll s2 = a2 - a2 / 2 + a3;
+                tr.erase(v - 1);
+                tr.erase(v - 1);
+                tr.erase(v - 1);
+                tr.insert(s2, v - 1);
+                tr.insert(s1, v - 1);
+            }
+            cout << tr.sum(0, tr.size - 1) << '\n';
+        } else if (e == 2) {
+            ll a = tr[v];
+            ll s1 = a / 2;
+            ll s2 = a - a / 2;
+            tr.erase(v);
+            tr.insert(s2, v);
+            tr.insert(s1, v);
+            cout << tr.sum(0, tr.size - 1) << '\n';
         }
     }
 }

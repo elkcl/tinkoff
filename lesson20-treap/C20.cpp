@@ -42,11 +42,31 @@ using pp = pair<Node*, Node*>;
 
 struct Node {
     int val, pr, sz = 1;
-    int sum;
-    bool rev = false;
-    Node *l = nullptr, *r = nullptr;
+    Node *l = nullptr, *r = nullptr, *p = nullptr;
 
-    Node(int _key, int _pr): val{_key}, pr{_pr}, minv{_key} {}
+    Node(int _key, int _pr): val{_key}, pr{_pr} {}
+
+    void discl() const {
+        if (l)
+            l->p = nullptr;
+    }
+
+    void discr() const {
+        if (r)
+            r->p = nullptr;
+    }
+
+    void setl(Node* t) {
+        l = t;
+        if (t)
+            t->p = this;
+    }
+
+    void setr(Node* t) {
+        r = t;
+        if (t)
+            t->p = this;
+    }
 
     static int get_sz(Node* t) {
         if (!t)
@@ -54,46 +74,27 @@ struct Node {
         return t->sz;
     }
 
-    static int get_sum(Node* t) {
-        if (!t)
-            return INF;
-        return t->minv;
-    }
-
     static void upd(Node* t) {
         if (t) {
             t->sz = 1 + get_sz(t->l) + get_sz(t->r);
-            t->minv = min(t->val, min(get_min(t->l), get_min(t->r)));
         }
-    }
-
-    static void push(Node* t) {
-        if (!t)
-            return;
-        if (!(t->rev))
-            return;
-        swap(t->l, t->r);
-        if (t->l)
-            t->l->rev ^= 1;
-        if (t->r)
-            t->r->rev ^= 1;
-        t->rev = false;
     }
 
     static pp split(Node *t, int k) {
         if (!t)
             return {nullptr, nullptr};
 
-        push(t);
         int num = get_sz(t->l);
         if (k > num) {
+            t->discr();
             auto&& [t1, t2] = split(t->r, k - num - 1);
-            t->r = t1;
+            t->setr(t1);
             upd(t);
             return {t, t2};
         } else {
+            t->discl();
             auto&& [t1, t2] = split(t->l, k);
-            t->l = t2;
+            t->setl(t2);
             upd(t);
             return {t1, t};
         }
@@ -110,17 +111,33 @@ struct Node {
         }
 
         if (t1->pr > t2->pr) {
-            push(t1);
-            t1->r = merge(t1->r, t2);
+            t1->discr();
+            t1->setr(merge(t1->r, t2));
             upd(t1);
             return t1;
         } else {
-            push(t2);
-            t2->l = merge(t1, t2->l);
+            t2->discl();
+            t2->setl(merge(t1, t2->l));
             upd(t2);
             return t2;
         }
     }
+
+    /*static Node* minv(Node* t) {
+        if (!t)
+            return nullptr;
+        if (!t->l)
+            return t;
+        return minv(t->l);
+    }
+
+    static Node* max(Node* t) {
+        if (!t)
+            return nullptr;
+        if (!t->r)
+            return t;
+        return max(t->r);
+    }*/
 };
 
 struct TreapVec {
@@ -138,7 +155,7 @@ struct TreapVec {
         mt.seed(3524900925);
     }
 
-    void insert(int val, int k = -1) {
+    Node* insert(int val, int k = -1) {
         assert(k <= size);
         if (k == -1)
             k = size;
@@ -146,10 +163,11 @@ struct TreapVec {
         Node *t = new Node(val, dist(mt));
         if (!root) {
             root = t;
-            return;
+            return t;
         }
         auto&& [t1, t2] = Node::split(root, k);
         root = Node::merge(t1, Node::merge(t, t2));
+        return t;
     }
 
     bool erase(int k) {
@@ -216,48 +234,94 @@ struct TreapVec {
         to_vec(v, root);
     }
 
-    int minv(int l, int r) {
-        assert(l <= r);
-        assert(r < size);
-        auto&& [t12, t3] = Node::split(root, r + 1);
-        auto&& [t1, t2] = Node::split(t12, l);
-        int res = Node::get_min(t2);
-        root = Node::merge(t1, Node::merge(t2, t3));
-        return res;
+    int index(Node* t) {
+        if (!t)
+            return -1;
+        int ans = Node::get_sz(t->l);
+        Node* last = t;
+        Node* curr = t->p;
+        while (curr) {
+            if (last == curr->r)
+                ans += Node::get_sz(curr->l) + 1;
+            last = curr;
+            curr = curr->p;
+        }
+        return ans;
     }
 
-    void rev(int l, int r) {
+    template<typename Func>
+    void apply(int l, int r, Func f) {
         assert(l <= r);
         assert(r < size);
         auto&& [t12, t3] = Node::split(root, r + 1);
         auto&& [t1, t2] = Node::split(t12, l);
-        t2->rev ^= 1;
+        t2 = f(t2);
         root = Node::merge(t1, Node::merge(t2, t3));
+    }
+
+    template<typename Func>
+    int get(int l, int r, Func f) {
+        assert(l <= r);
+        assert(r < size);
+        auto&& [t12, t3] = Node::split(root, r + 1);
+        auto&& [t1, t2] = Node::split(t12, l);
+        int ans = f(t2);
+        root = Node::merge(t1, Node::merge(t2, t3));
+        return ans;
+    }
+
+    void swap(int l1, int r1, int l2, int r2) {
+        if (l1 > l2) {
+            ::swap(l1, l2);
+            ::swap(r1, r2);
+        }
+        assert(r1 < l2);
+
+        Node *t2 = cut(l2, r2);
+        Node *t1 = cut(l1, r1);
+        paste(t2, l1);
+        paste(t1, l2);
     }
 };
 
 int main() {
     fast_io
-    file_io("reverse")
 
     int n, m;
     cin >> n >> m;
     TreapVec tr;
+    vector<Node*> v(n + 1);
     for (int i = 0; i < n; ++i) {
         int a;
         cin >> a;
-        tr.insert(a);
+        v[a] = tr.insert(a);
     }
 
     for (int q = 0; q < m; ++q) {
-        int t, l, r;
-        cin >> t >> l >> r;
-        --l;
-        --r;
+        int t;
+        cin >> t;
         if (t == 1) {
-            tr.rev(l, r);
+            int l1, r1, l2, r2;
+            cin >> l1 >> r1 >> l2 >> r2;
+            tr.swap(l1-1, r1-1, l2-1, r2-1);
         } else if (t == 2) {
-            cout << tr.minv(l, r) << '\n';
+            int x;
+            cin >> x;
+            int k = tr.index(v[x]);
+            vi c;
+            if (k + 1 == tr.size) {
+                cout << "-1 -1 -1 \n";
+                continue;
+            }
+            tr.apply(k + 1, min(k + 3, tr.size - 1), [&tr, &c](Node* t) {
+                tr.to_vec(c, t);
+                return t;
+            });
+            for (int el : c)
+                cout << el << ' ';
+            for (int i = 0; i < 3 - c.size(); ++i)
+                cout << "-1 ";
+            cout << '\n';
         }
     }
 }
