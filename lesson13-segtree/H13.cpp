@@ -2,6 +2,8 @@
 #pragma GCC optimize("O3")
 #pragma GCC target("avx2")
 #endif
+#pragma GCC optimize("O3")
+#pragma GCC target("avx2")
 
 #include <iostream>
 #include <utility>
@@ -26,6 +28,8 @@ using vii = vector<ii>;
 using vvi = vector<vi>;
 using vc = vector<char>;
 using ui = unsigned int;
+using ull = uint64_t;
+using vull = vector<ull>;
 
 #define all(x) (x).begin(), (x).end()
 #define fast_io ios_base::sync_with_stdio(false); cin.tie(nullptr);
@@ -37,40 +41,38 @@ using ui = unsigned int;
 
 template<typename T, typename F>
 struct SegTree {
-    int n;
+    ull n;
     vector<T> t;
-    vi left;
-    vi right;
+    vull &left;
+    vull &right;
     F op{};
-    void build(int v, int l, int r, const vector<T> &a);
-    void upd(int pos, T x, int v = 1);
-    T get(int ql, int qr, int v = 1);
-    int kth(ll k, int v = 1);
-    explicit SegTree(const vector<T> &a) {
+    void build(ull v, ull l, ull r, const vector<T> &a);
+    void upd(ull pos, T x, ull v = 1);
+    T get(ull ql, ull qr, ull v = 1);
+    int kth(ll k, ull v = 1);
+    explicit SegTree(const vector<T> &a, vull &l, vull &r): left{l}, right{r} {
         n = a.size();
         t.resize(4 * n);
-        left.resize(4 * n);
-        right.resize(4 * n);
         build(1, 0, n, a);
     }
 };
 
 template<typename T, typename F>
-void SegTree<T, F>::build(int v, int l, int r, const vector<T> &a) {
+void SegTree<T, F>::build(ull v, ull l, ull r, const vector<T> &a) {
     left[v] = l;
     right[v] = r;
     if (l + 1 == r) {
         t[v] = a[l];
         return;
     }
-    int m = (l + r) / 2;
+    ull m = (l + r) / 2;
     build(2 * v, l, m, a);
     build(2 * v + 1, m, r, a);
     t[v] = op(t[2 * v], t[2 * v + 1]);
 }
 
 template<typename T, typename F>
-T SegTree<T, F>::get(int ql, int qr, int v) {
+T SegTree<T, F>::get(ull ql, ull qr, ull v) {
     if (ql >= right[v] || qr <= left[v]) {
         return F::NEUTRAL;
     }
@@ -81,12 +83,12 @@ T SegTree<T, F>::get(int ql, int qr, int v) {
 }
 
 template<typename T, typename F>
-void SegTree<T, F>::upd(int pos, T x, int v) {
+void SegTree<T, F>::upd(ull pos, T x, ull v) {
     if (left[v] + 1 == right[v]) {
         t[v] = x;
         return;
     }
-    int m = (left[v] + right[v]) / 2;
+    ull m = (left[v] + right[v]) / 2;
     if (pos < m) {
         upd(pos, x, 2 * v);
     } else {
@@ -96,7 +98,7 @@ void SegTree<T, F>::upd(int pos, T x, int v) {
 }
 
 template<typename T, typename F>
-int SegTree<T, F>::kth(ll k, int v) {
+int SegTree<T, F>::kth(ll k, ull v) {
     if (k >= t[v])
         return -1;
     if (k < 0)
@@ -109,52 +111,42 @@ int SegTree<T, F>::kth(ll k, int v) {
         return kth(k - t[v * 2], v * 2 + 1);
 }
 
+template<typename T>
 struct Add {
-    static const ll NEUTRAL = 0;
-    ll operator()(ll a, ll b) {
+    static const T NEUTRAL = 0;
+    T operator()(T a, T b) const {
         return a + b;
     }
 };
 
 int main() {
     fast_io
-    file_io("kthzero")
-
-    int n, m;
+    //file_io("kthzero")
+    freopen("/home/elk/Development/aa.txt", "r", stdin);
+    int n;
     cin >> n;
-    vll v(n);
+    vi v(n);
+    for (int &el : v)
+        cin >> el;
+    vi srt(v);
+    sort(all(srt));
+    auto last = unique(all(srt));
+    srt.erase(last, srt.end());
+    vi zip(n);
+    for (int i = 0; i < n; ++i)
+        zip[i] = lower_bound(all(srt), v[i]) - srt.begin();
+    vi dp(srt.size(), 0);
+    vull left(4 * srt.size());
+    vull right(4 * srt.size());
+    SegTree<int, Add<int>> seg0(dp, left, right);
+    SegTree<int, Add<int>> seg1(dp, left, right);
+    SegTree<int, Add<int>> seg2(dp, left, right);
     for (int i = 0; i < n; ++i) {
-        int a;
-        cin >> a;
-        if (a == 0)
-            v[i] = 1;
-        else
-            v[i] = 0;
+        int a = zip[i];
+        seg0.upd(a, dp[a] + 1);
+        ++dp[a];
+        seg1.upd(a, seg0.get(a + 1, srt.size()));
+        seg2.upd(a, seg1.get(a + 1, srt.size()));
     }
-    cin >> m;
-    SegTree<ll, Add> seg(v);
-
-    for (int q = 0; q < m; ++q) {
-        char t;
-        cin >> t;
-        if (t == 's') {
-            int l, r;
-            ll k;
-            cin >> l >> r >> k;
-            --l;
-            --r;
-            --k;
-            k += seg.get(0, l);
-            int x = seg.kth(k);
-            if (x == -1 || x > r)
-                cout << "-1\n";
-            else
-                cout << x + 1 << '\n';
-        } else if (t == 'u') {
-            int i;
-            ll x;
-            cin >> i >> x;
-            seg.upd(i - 1, x == 0);
-        }
-    }
+    cout << seg2.get(0, srt.size()) << '\n';
 }

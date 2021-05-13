@@ -44,8 +44,9 @@ struct SegTree {
     F op{};
     void build(int v, int l, int r, const vector<T> &a);
     void upd(int pos, T x, int v = 1);
-    T get(int ql, int qr, int v = 1);
-    int kth(ll k, int v = 1);
+    T get(int ql, int qr, int v = 1) const;
+    void getArr(int ql, int qr, vi &vec, int v = 1) const;
+    int kth(T k, int v = 1) const;
     explicit SegTree(const vector<T> &a) {
         n = a.size();
         t.resize(4 * n);
@@ -70,7 +71,7 @@ void SegTree<T, F>::build(int v, int l, int r, const vector<T> &a) {
 }
 
 template<typename T, typename F>
-T SegTree<T, F>::get(int ql, int qr, int v) {
+T SegTree<T, F>::get(int ql, int qr, int v) const {
     if (ql >= right[v] || qr <= left[v]) {
         return F::NEUTRAL;
     }
@@ -78,6 +79,19 @@ T SegTree<T, F>::get(int ql, int qr, int v) {
         return t[v];
     }
     return op(get(ql, qr, 2 * v), get(ql, qr, 2 * v + 1));
+}
+
+template<typename T, typename F>
+void SegTree<T, F>::getArr(int ql, int qr, vi &vec, int v) const {
+    if (ql >= right[v] || qr <= left[v]) {
+        return;
+    }
+    if (ql <= left[v] && qr >= right[v]) {
+        vec.push_back(v);
+        return;
+    }
+    getArr(ql, qr, vec, 2 * v);
+    getArr(ql, qr, vec, 2 * v + 1);
 }
 
 template<typename T, typename F>
@@ -96,65 +110,54 @@ void SegTree<T, F>::upd(int pos, T x, int v) {
 }
 
 template<typename T, typename F>
-int SegTree<T, F>::kth(ll k, int v) {
-    if (k >= t[v])
-        return -1;
-    if (k < 0)
-        return -1;
+int SegTree<T, F>::kth(T k, int v) const {
     if (left[v] + 1 == right[v])
         return left[v];
-    if (t[v * 2] > k)
+    if (t[v * 2] >= k)
         return kth(k, v * 2);
     else
-        return kth(k - t[v * 2], v * 2 + 1);
+        return kth(k, v * 2 + 1);
 }
 
-struct Add {
-    static const ll NEUTRAL = 0;
-    ll operator()(ll a, ll b) {
-        return a + b;
+struct Max {
+    static const int NEUTRAL = 0;
+    int operator()(int a, int b) const {
+        return max(a, b);
     }
 };
 
 int main() {
     fast_io
-    file_io("kthzero")
+    file_io("nearandmore")
 
     int n, m;
-    cin >> n;
-    vll v(n);
-    for (int i = 0; i < n; ++i) {
-        int a;
-        cin >> a;
-        if (a == 0)
-            v[i] = 1;
-        else
-            v[i] = 0;
-    }
-    cin >> m;
-    SegTree<ll, Add> seg(v);
+    cin >> n >> m;
+    vi vin(n);
+    for (int &el : vin)
+        cin >> el;
+    SegTree<int, Max> seg(vin);
 
     for (int q = 0; q < m; ++q) {
-        char t;
-        cin >> t;
-        if (t == 's') {
-            int l, r;
-            ll k;
-            cin >> l >> r >> k;
-            --l;
-            --r;
-            --k;
-            k += seg.get(0, l);
-            int x = seg.kth(k);
-            if (x == -1 || x > r)
+        int t, i, x;
+        cin >> t >> i >> x;
+        --i;
+        if (t == 0) {
+            seg.upd(i, x);
+        } else if (t == 1) {
+            vi vec;
+            seg.getArr(i, n, vec);
+            int v = -1;
+            for (int el : vec) {
+                if (seg.t[el] >= x) {
+                    v = el;
+                    break;
+                }
+            }
+            if (v == -1) {
                 cout << "-1\n";
-            else
-                cout << x + 1 << '\n';
-        } else if (t == 'u') {
-            int i;
-            ll x;
-            cin >> i >> x;
-            seg.upd(i - 1, x == 0);
+                continue;
+            }
+            cout << seg.kth(x, v) + 1 << '\n';
         }
     }
 }
